@@ -51,6 +51,28 @@ public class GetProductsTest {
                     .body("description", equalTo("Roman Imperor Description"))
                     .body("category.id", equalTo(3));
         }
+
+    @Test
+    public void testGetLimitedProducts() {
+            testCreateProduct();
+        Response response = RestAssured
+                .given()
+                .baseUri("https://api.escuelajs.co")
+                .basePath("/api/v1/products")
+                .header("accept", "*/*")
+                .queryParam("limit", 3)
+                .queryParam("offset", 0)
+                .when()
+                .get()
+                .then()
+                .statusCode(200)
+                .body("size()", is(3))
+                .body("[0].id", notNullValue())
+                .extract().response();
+
+        assertEquals(response.statusCode(), 200);
+        System.out.println("Response: " + response.asPrettyString());
+    }
     }
 
 
