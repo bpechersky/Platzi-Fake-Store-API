@@ -60,13 +60,13 @@ public class GetProductsTest {
                 .baseUri("https://api.escuelajs.co")
                 .basePath("/api/v1/products")
                 .header("accept", "*/*")
-                .queryParam("limit", 3)
+                .queryParam("limit", 1)
                 .queryParam("offset", 0)
                 .when()
                 .get()
                 .then()
                 .statusCode(200)
-                .body("size()", is(3))
+                .body("size()", is(1))
                 .body("[0].id", notNullValue())
                 .extract().response();
 
