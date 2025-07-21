@@ -73,6 +73,53 @@ public class GetProductsTest {
         assertEquals(response.statusCode(), 200);
         System.out.println("Response: " + response.asPrettyString());
     }
+    @Test
+    public void testRegisterAndLoginUser() {
+        String email = "testuser" + System.currentTimeMillis() + "@example.com";
+        String password = "MySecurePass123";
+
+        // Step 1: Register new user
+        Map<String, Object> user = new HashMap<>();
+        user.put("email", email);
+        user.put("password", password);
+        user.put("name", "Test User");
+        user.put("avatar", "https://api.lorem.space/image/face?w=150&h=150");
+
+        RestAssured
+                .given()
+                .baseUri("https://api.escuelajs.co")
+                .basePath("/api/v1/users")
+                .contentType(ContentType.JSON)
+                .body(user)
+                .when()
+                .post()
+                .then()
+                .statusCode(201)
+                .body("email", equalTo(email));
+
+        // Step 2: Login with the same credentials
+        String accessToken = RestAssured
+                .given()
+                .baseUri("https://api.escuelajs.co")
+                .basePath("/api/v1/auth/login")
+                .contentType("application/x-www-form-urlencoded")
+                .formParam("email", email)
+                .formParam("password", password)
+                .when()
+                .post()
+                .then()
+                .statusCode(201)
+                .body("access_token", notNullValue())
+                .extract()
+                .path("access_token");
+
+        System.out.println("Access Token: " + accessToken);
     }
+
+
+
+
+
+}
 
 
