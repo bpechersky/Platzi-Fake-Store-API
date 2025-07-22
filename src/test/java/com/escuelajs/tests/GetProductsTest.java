@@ -18,6 +18,7 @@ public class GetProductsTest {
     private String accessToken;
     private String refreshToken;
     private String testEmail;
+    private int productId;
 
     @BeforeClass
     public void registerAndLoginUser() {
@@ -78,7 +79,7 @@ public class GetProductsTest {
             requestBody.put("categoryId", 3);
             requestBody.put("images", List.of("www.images.com"));
 
-            RestAssured
+            Response response = RestAssured
                     .given()
                     .baseUri("https://api.escuelajs.co")
                     .basePath("/api/v1/products")
@@ -93,7 +94,11 @@ public class GetProductsTest {
                     .body("title", equalTo(uniqueTitle))
                     .body("price", equalTo(12.3f))
                     .body("description", equalTo("Roman Imperor Description"))
-                    .body("category.id", equalTo(3));
+                    .body("category.id", equalTo(3))
+                    .extract().response();
+
+            productId = response.path("id"); // ✅ Save product ID for reuse
+            System.out.println("Created Product ID: " + productId);
         }
 
     @Test
@@ -153,6 +158,19 @@ public class GetProductsTest {
                 .extract().response();
 
         System.out.println("New Access Token:\n" + response.path("access_token"));
+    }
+    @Test(dependsOnMethods = "testCreateProduct")
+    public void testGetProductById() {
+        RestAssured
+                .given()
+                .baseUri("https://api.escuelajs.co")
+                .basePath("/api/v1/products/" + productId)
+                .header("accept", "*/*")
+                .when()
+                .get()
+                .then()
+                .statusCode(200)
+                .body("id", equalTo(productId));
     }
 
 }
