@@ -134,7 +134,26 @@ public class GetProductsTest {
                 .body("role", notNullValue());
     }
 
+    @Test
+    public void testRefreshAccessToken() {
+        Map<String, String> body = Map.of("refreshToken", refreshToken);
 
+        Response response = RestAssured
+                .given()
+                .baseUri("https://api.escuelajs.co")
+                .basePath("/api/v1/auth/refresh-token")
+                .header("accept", "*/*")
+                .contentType(ContentType.JSON)
+                .body(body)
+                .when()
+                .post()
+                .then()
+                .statusCode(201)
+                .body("access_token", notNullValue())
+                .extract().response();
+
+        System.out.println("New Access Token:\n" + response.path("access_token"));
+    }
 
 }
 
