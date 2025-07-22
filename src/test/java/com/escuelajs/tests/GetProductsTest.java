@@ -19,6 +19,8 @@ public class GetProductsTest {
     private String refreshToken;
     private String testEmail;
     private int productId;
+    private static String slug;
+    private static int extractedCategoryId;
 
     @BeforeClass
     public void registerAndLoginUser() {
@@ -68,16 +70,15 @@ public class GetProductsTest {
     }
         @Test
         public void testCreateProduct() {
-            // Make title unique
+              testGetLimitedProducts();
             String uniqueTitle = "Roman Imperor " + System.currentTimeMillis();
 
-            // Prepare request body
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("title", uniqueTitle);
             requestBody.put("price", 12.3);
             requestBody.put("description", "Roman Imperor Description");
-            requestBody.put("categoryId", 24);
-            requestBody.put("images", List.of("www.images.com"));
+            requestBody.put("categoryId", extractedCategoryId); // Valid category ID
+            requestBody.put("images", List.of("https://image.com/img.png")); // Valid URL string
 
             Response response = RestAssured
                     .given()
@@ -89,38 +90,49 @@ public class GetProductsTest {
                     .when()
                     .post()
                     .then()
+                    .log().all()
                     .statusCode(201)
                     .body("id", notNullValue())
                     .body("title", equalTo(uniqueTitle))
                     .body("price", equalTo(12.3f))
                     .body("description", equalTo("Roman Imperor Description"))
-                    .body("category.id", equalTo(24))
+                    .body("category.id", equalTo(extractedCategoryId))
                     .extract().response();
 
-            productId = response.path("id"); // ✅ Save product ID for reuse
+            // Extract values for later use
+            productId = response.path("id");
+            slug = response.path("slug");
+
             System.out.println("Created Product ID: " + productId);
+            System.out.println("Slug: " + slug);
         }
 
     @Test
     public void testGetLimitedProducts() {
-            testCreateProduct();
-        Response response = RestAssured
-                .given()
-                .baseUri("https://api.escuelajs.co")
-                .basePath("/api/v1/products")
-                .header("accept", "*/*")
-                .queryParam("limit", 1)
-                .queryParam("offset", 0)
-                .when()
-                .get()
-                .then()
-                .statusCode(200)
-                .body("size()", is(1))
-                .body("[0].id", notNullValue())
-                .extract().response();
+         //   testCreateProduct(); // ensure there's at least one product to retrieve
 
-        assertEquals(response.statusCode(), 200);
-        System.out.println("Response: " + response.asPrettyString());
+            Response response = RestAssured
+                    .given()
+                    .baseUri("https://api.escuelajs.co")
+                    .basePath("/api/v1/products")
+                    .header("accept", "*/*")
+                    .queryParam("limit", 1)
+                    .queryParam("offset", 0)
+                    .when()
+                    .get()
+                    .then()
+                    .statusCode(200)
+                    .body("size()", is(1))
+                    .body("[0].id", notNullValue())
+                    .body("[0].category.id", notNullValue())
+                    .extract().response();
+
+            // Extract category ID
+             extractedCategoryId = response.path("[0].category.id");
+            System.out.println("Extracted category ID: " + extractedCategoryId);
+
+            assertEquals(response.statusCode(), 200);
+            System.out.println("Response: " + response.asPrettyString());
     }
 
 
@@ -209,7 +221,7 @@ public class GetProductsTest {
                     "title", uniqueTitle,
                     "price", 1.2,
                     "description", "Changed Description",
-                    "categoryId", 24,
+                    "categoryId", extractedCategoryId,
                     "images", List.of("www.google.com")
             );
 
@@ -228,7 +240,7 @@ public class GetProductsTest {
                     .body("title", equalTo(uniqueTitle))
                     .body("price", equalTo(1.2f))
                     .body("description", equalTo("Changed Description"))
-                    .body("category.id", equalTo(24))
+                    .body("category.id", equalTo(extractedCategoryId))
                     .body("images[0]", equalTo("www.google.com"));
         }
 
@@ -245,6 +257,23 @@ public class GetProductsTest {
                 .delete()
                 .then()
                 .statusCode(anyOf(is(200), is(204))); // API returns 200 or 204 on success
+    }
+
+    @Test(dependsOnMethods = "testCreateProduct")
+    public void testGetProductBySlug() {
+        RestAssured
+                .given()
+                .baseUri("https://api.escuelajs.co")
+                .basePath("/api/v1/products/slug/" + slug)
+                .header("accept", "*/*")
+                .when()
+                .get()
+                .then()
+                .statusCode(200)
+                .contentType(ContentType.JSON)
+                .body("title", notNullValue())
+                .body("id", notNullValue())
+                .body("slug", equalTo(slug)); // use class-level variable here
     }
 
 }
