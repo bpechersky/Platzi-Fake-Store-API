@@ -276,6 +276,27 @@ public class GetProductsTest {
                 .body("slug", equalTo(slug)); // use class-level variable here
     }
 
+    @Test(dependsOnMethods = "testCreateProduct")
+    public void testGetRelatedProductsBySlug() {
+
+
+        Response response = RestAssured
+                .given()
+                .baseUri("https://api.escuelajs.co")
+                .basePath("/api/v1/products/slug/" + slug + "/related")
+                .header("accept", "*/*")
+                .when()
+                .get()
+                .then()
+                .statusCode(200)
+                .body("$", not(empty()))
+                .extract().response();
+
+        System.out.println("Related products for slug '" + slug + "':");
+        System.out.println(response.asPrettyString());
+    }
+
+
 }
 
 
