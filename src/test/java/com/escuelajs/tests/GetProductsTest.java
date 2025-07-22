@@ -76,7 +76,7 @@ public class GetProductsTest {
             requestBody.put("title", uniqueTitle);
             requestBody.put("price", 12.3);
             requestBody.put("description", "Roman Imperor Description");
-            requestBody.put("categoryId", 3);
+            requestBody.put("categoryId", 24);
             requestBody.put("images", List.of("www.images.com"));
 
             Response response = RestAssured
@@ -94,7 +94,7 @@ public class GetProductsTest {
                     .body("title", equalTo(uniqueTitle))
                     .body("price", equalTo(12.3f))
                     .body("description", equalTo("Roman Imperor Description"))
-                    .body("category.id", equalTo(3))
+                    .body("category.id", equalTo(24))
                     .extract().response();
 
             productId = response.path("id"); // ✅ Save product ID for reuse
@@ -173,6 +173,69 @@ public class GetProductsTest {
                 .body("id", equalTo(productId));
     }
 
+
+
+
+
+        @Test(dependsOnMethods = "testCreateProduct")
+        public void testGetRelatedProducts() {
+
+
+            Response response = RestAssured
+                    .given()
+                    .baseUri("https://api.escuelajs.co")
+                    .basePath("/api/v1/products/" + productId + "/related")
+                    .header("accept", "*/*")
+                    .when()
+                    .get()
+                    .then()
+                    .statusCode(200)
+                    .body("size()", greaterThan(0))
+                    .body("[0].id", notNullValue())
+                    .extract().response();
+
+            System.out.println("Related Products:\n" + response.asPrettyString());
+            assertEquals(response.statusCode(), 200);
+        }
+
+
+
+
+        @Test(dependsOnMethods = "testCreateProduct")
+        public void testUpdateProductById() {
+            String uniqueTitle = "Updated Title " + System.currentTimeMillis();
+
+            Map<String, Object> requestBody = Map.of(
+                    "title", uniqueTitle,
+                    "price", 1.2,
+                    "description", "Changed Description",
+                    "categoryId", 24,
+                    "images", List.of("www.google.com")
+            );
+
+            RestAssured
+                    .given()
+                    .baseUri("https://api.escuelajs.co")
+                    .basePath("/api/v1/products/" + productId)
+                    .header("accept", "*/*")
+                    .contentType(ContentType.JSON)
+                    .body(requestBody)
+                    .when()
+                    .put()
+                    .then()
+                    .statusCode(200)
+                    .body("id", equalTo(productId))
+                    .body("title", equalTo(uniqueTitle))
+                    .body("price", equalTo(1.2f))
+                    .body("description", equalTo("Changed Description"))
+                    .body("category.id", equalTo(24))
+                    .body("images[0]", equalTo("www.google.com"));
+        }
+
+
 }
+
+
+
 
 
