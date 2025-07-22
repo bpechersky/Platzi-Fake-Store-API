@@ -232,6 +232,20 @@ public class GetProductsTest {
                     .body("images[0]", equalTo("www.google.com"));
         }
 
+    @Test(dependsOnMethods = {"testCreateProduct", "testUpdateProductById"})
+    public void testDeleteProductById() {
+
+
+        RestAssured
+                .given()
+                .baseUri("https://api.escuelajs.co")
+                .basePath("/api/v1/products/" + productId)
+                .header("accept", "*/*")
+                .when()
+                .delete()
+                .then()
+                .statusCode(anyOf(is(200), is(204))); // API returns 200 or 204 on success
+    }
 
 }
 
