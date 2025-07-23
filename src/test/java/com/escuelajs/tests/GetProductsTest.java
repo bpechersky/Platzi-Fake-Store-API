@@ -21,6 +21,7 @@ public class GetProductsTest {
     private int productId;
     private static String slug;
     private static int extractedCategoryId;
+    private static int userId;
 
     @BeforeClass
     public void registerAndLoginUser() {
@@ -34,7 +35,7 @@ public class GetProductsTest {
         user.put("name", "Test User");
         user.put("avatar", "https://api.lorem.space/image/face?w=150&h=150");
 
-        RestAssured
+        Response registerResponse = RestAssured
                 .given()
                 .baseUri("https://api.escuelajs.co")
                 .basePath("/api/v1/users")
@@ -44,7 +45,13 @@ public class GetProductsTest {
                 .post()
                 .then()
                 .statusCode(201)
-                .body("email", equalTo(testEmail));
+                .body("email", equalTo(testEmail))
+                .extract().response();
+
+// ✅ Extract userId from registration response
+        userId = registerResponse.path("id");
+        System.out.println("User ID: " + userId);
+
 
         // Login
         Response loginResponse = RestAssured
@@ -61,7 +68,7 @@ public class GetProductsTest {
                 .body("access_token", notNullValue())
                 .body("refresh_token", notNullValue())
                 .extract().response();
-        int userId = loginResponse.path("id");
+        int userId = registerResponse.path("id");
         System.out.println("User ID: " + userId);
         accessToken = loginResponse.path("access_token");
         refreshToken = loginResponse.path("refresh_token");

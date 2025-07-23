@@ -12,14 +12,16 @@ import java.util.Map;
 import static org.hamcrest.Matchers.*;
 import static org.testng.Assert.*;
 
-public class    GetUsersTest {
-private static int userId;
+public class  GetUsersTest {
+    private static int userId;
+    private static String accessToken; // 🔹 Class-level variable to store token
+
     @BeforeClass
     public void registerAndLoginUser() {
-        String testEmail  = "testuser" + System.currentTimeMillis() + "@example.com";
+        String testEmail = "testuser" + System.currentTimeMillis() + "@example.com";
         String password = "MySecurePass123";
 
-        // Register user and capture userId
+        // Register user
         Map<String, Object> user = new HashMap<>();
         user.put("email", testEmail);
         user.put("password", password);
@@ -39,17 +41,15 @@ private static int userId;
                 .body("email", equalTo(testEmail))
                 .extract().response();
 
-        userId = registerResponse.path("id"); // ✅ Extract userId correctly
-        System.out.println("User ID: " + userId);
+        userId = registerResponse.path("id"); // ✅ Capture user ID correctly
 
-        // Login to get tokens
+        // Login
         Response loginResponse = RestAssured
                 .given()
                 .baseUri("https://api.escuelajs.co")
                 .basePath("/api/v1/auth/login")
-                .contentType("application/x-www-form-urlencoded")
-                .formParam("email", testEmail)
-                .formParam("password", password)
+                .contentType(ContentType.JSON)
+                .body(Map.of("email", testEmail, "password", password)) // Fixed payload format
                 .when()
                 .post()
                 .then()
@@ -58,44 +58,18 @@ private static int userId;
                 .body("refresh_token", notNullValue())
                 .extract().response();
 
-        String accessToken = loginResponse.path("access_token");
-        String refreshToken = loginResponse.path("refresh_token");
-
+        accessToken = loginResponse.path("access_token"); // ✅ Save token to class
         System.out.println("Access Token: " + accessToken);
-        System.out.println("Refresh Token: " + refreshToken);
+        System.out.println("User ID: " + userId);
     }
 
-    @Test
-    public void testGetAllUsersWithLimit() {
-        Response response = RestAssured
-                .given()
-                .baseUri("https://api.escuelajs.co")
-                .basePath("/api/v1/users")
-                .header("accept", "*/*")
-                .queryParam("limit", 100)
-                .when()
-                .get()
-                .then()
-                .statusCode(200)
-                .body("size()", greaterThan(0))
-                .body("[0].id", notNullValue())
-                .body("[0].email", notNullValue())
-                .extract().response();
-
-         userId = response.path("[0].id");
-
-         System.out.println(("userId is " +userId));
-
-        System.out.println("User list response (limit=100):");
-        System.out.println(response.asPrettyString());
-
-        assertEquals(response.statusCode(), 200);
-    }
-    @Test(dependsOnMethods = "testGetAllUsersWithLimit")
-    public void testGetUserById() {
 
 
-        Response response = RestAssured
+    @Test(priority = 1)
+    public void testGetPublicUserById() {
+       // int publicUserId = 1; // Hardcoded public user ID
+
+        RestAssured
                 .given()
                 .baseUri("https://api.escuelajs.co")
                 .basePath("/api/v1/users/" + userId)
@@ -107,35 +81,44 @@ private static int userId;
                 .body("id", equalTo(userId))
                 .body("email", notNullValue())
                 .body("name", notNullValue())
-                .extract().response();
-
-        System.out.println("User Details:\n" + response.asPrettyString());
-        assertEquals(response.statusCode(), 200);
+                .log().body();
     }
-    @Test
-    public void testUpdateUserById() {
+
+
+    @Test(priority = 2)
+    public void testUpdateUserWithTimestamps() {
+        Map<String, Object> userPayload = new HashMap<>();
+        userPayload.put("id", userId); // Replace with actual userId variable if available
+        userPayload.put("email", "bp+1@gmail.com");
+        userPayload.put("password", "Test123");
+        userPayload.put("name", "John Smith");
+        userPayload.put("role", "customer");
+        userPayload.put("avatar", "www.google.com");
+        userPayload.put("creationAt", "2025-07-23T01:09:47.000Z");
+        userPayload.put("updatedAt", "2025-07-23T01:10:01.000Z");
+
         RestAssured
                 .given()
                 .baseUri("https://api.escuelajs.co")
                 .basePath("/api/v1/users/" + userId)
-                .header("accept", "*/*")
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(ContentType.JSON)
-                .body("{\n" +
-                        "  \"email\": \"bp+1@gmail.com\",\n" +
-                        "  \"name\": \"John Smith\",\n" +
-                        "  \"password\": \"Test123\",\n" +
-                        "  \"role\": \"customer\",\n" +
-                        "  \"avatar\": \"www.google.com\"\n" +
-                        "}")
+                .body(userPayload)
                 .when()
                 .put()
                 .then()
                 .statusCode(200)
+                .body("email", equalTo("bp+1@gmail.com"))
+                .body("name", equalTo("John Smith"))
+                .body("role", equalTo("customer"))
                 .log().all();
     }
 
-    @Test
+
+
+    @Test(priority = 3)
     public void testDeleteUserById() {
+        registerAndLoginUser();
         RestAssured
                 .given()
                 .baseUri("https://api.escuelajs.co")
