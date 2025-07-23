@@ -1,8 +1,12 @@
 package com.escuelajs.tests;
 
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.testng.annotations.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.hamcrest.Matchers.*;
 import static org.testng.Assert.*;
@@ -74,5 +78,32 @@ public class GetCategoriesTest {
 
         System.out.println("Fetched Category by ID:\n" + response.asPrettyString());
     }
+    @Test(dependsOnMethods = "testGetCategoryById")
+    public void testUpdateCategoryById() {
+        String updatedName = "NewAppliances_" + System.currentTimeMillis();
+
+        Map<String, Object> updatedCategory = new HashMap<>();
+        updatedCategory.put("name", updatedName);
+        updatedCategory.put("image", "https://www.google.com/logo.png");
+
+        Response response = RestAssured
+                .given()
+                .baseUri("https://api.escuelajs.co")
+                .basePath("/api/v1/categories/" + categoryId)
+                .contentType(ContentType.JSON)
+                .accept("*/*")
+                .body(updatedCategory)
+                .when()
+                .put()
+                .then()
+                .statusCode(200)
+                .body("id", equalTo(categoryId))
+                .body("name", equalTo(updatedName))
+                .body("image", equalTo("https://www.google.com/logo.png"))
+                .extract().response();
+
+        System.out.println("Updated Category:\n" + response.asPrettyString());
+    }
+
 
 }
