@@ -6,8 +6,8 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 
+import static org.hamcrest.Matchers.*;
 import static org.testng.Assert.assertEquals;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class UploadFileTest {
 
@@ -53,4 +53,32 @@ public class UploadFileTest {
         System.out.println("Downloaded file size: " + response.getBody().asByteArray().length);
         assertEquals(response.statusCode(), 200);
     }
-}
+
+
+    @Test
+    public void testAllLocationsHaveValidFields() {
+        Response response = RestAssured
+                .given()
+                .baseUri("https://api.escuelajs.co")
+                .basePath("/api/v1/locations")
+                .queryParam("radius", 10)
+                .queryParam("size", 10)
+                .queryParam("origin", "37.3382,-121.8863") // San Jose coordinates
+                .header("accept", "*/*")
+                .when()
+                .get()
+                .then()
+                .statusCode(200)
+                .body("id", everyItem(notNullValue()))
+                .body("name", everyItem(notNullValue()))
+                .body("description", everyItem(notNullValue()))
+                .body("latitude", everyItem(allOf(notNullValue(), greaterThan(37.0f), lessThan(38.0f))))
+                .body("longitude", everyItem(allOf(notNullValue(), greaterThan(-123.0f), lessThan(-121.0f))))
+                .extract().response();
+
+        System.out.println("Validated All Locations:\n" + response.asPrettyString());
+    }
+
+    }
+
+
