@@ -6,6 +6,7 @@ import io.restassured.response.Response;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.*;
@@ -103,6 +104,57 @@ public class GetCategoriesTest {
                 .extract().response();
 
         System.out.println("Updated Category:\n" + response.asPrettyString());
+    }
+
+    @Test(dependsOnMethods = "testUpdateCategoryById")
+    public void testDeleteCategoryById() {
+        Response response = RestAssured
+                .given()
+                .baseUri("https://api.escuelajs.co")
+                .basePath("/api/v1/categories/" + categoryId)
+                .header("accept", "*/*")
+                .when()
+                .delete()
+                .then()
+                .statusCode(200) // API returns 200 or 204 for successful delete; change if needed
+                .extract().response();
+
+        System.out.println("Deleted Category ID: " + categoryId);
+    }
+    @Test
+    public void testGetCategoryBySlug() {
+        Response response = RestAssured
+                .given()
+                .baseUri("https://api.escuelajs.co")
+                .basePath("/api/v1/categories/slug/" + categorySlug)
+                .header("accept", "*/*")
+                .when()
+                .get()
+                .then()
+                .statusCode(200)
+                .body("id", equalTo(categoryId))
+                .body("slug", equalTo(categorySlug))
+                .extract().response();
+
+        System.out.println("Fetched Category by Slug:\n" + response.asPrettyString());
+    }
+    @Test(dependsOnMethods = "testGetCategoryBySlug")
+    public void testGetProductsByCategoryId() {
+        Response response = RestAssured
+                .given()
+                .baseUri("https://api.escuelajs.co")
+                .basePath("/api/v1/categories/" + categoryId + "/products")
+                .queryParam("limit", 100)
+                .queryParam("offset", 0)
+                .header("accept", "*/*")
+                .when()
+                .get()
+                .then()
+                .statusCode(200)
+                .body("$", instanceOf(List.class)) // Validates that response is a list
+                .extract().response();
+
+        System.out.println("Products for Category ID " + categoryId + ":\n" + response.asPrettyString());
     }
 
 
