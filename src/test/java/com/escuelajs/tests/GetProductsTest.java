@@ -61,7 +61,8 @@ public class GetProductsTest {
                 .body("access_token", notNullValue())
                 .body("refresh_token", notNullValue())
                 .extract().response();
-
+        int userId = loginResponse.path("id");
+        System.out.println("User ID: " + userId);
         accessToken = loginResponse.path("access_token");
         refreshToken = loginResponse.path("refresh_token");
 
