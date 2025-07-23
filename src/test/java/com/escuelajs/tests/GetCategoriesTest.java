@@ -10,6 +10,9 @@ import static org.testng.Assert.*;
 public class GetCategoriesTest {
 
     private static int categoryId; // 🔹 Class-level variable
+    private static  String uniqueCategoryName ;
+    private static String categoryImage;
+    private static String categorySlug;
     @Test
     public void testGetCategoriesWithLimit() {
         Response response = RestAssured
@@ -30,8 +33,8 @@ public class GetCategoriesTest {
     }
     @Test
     public void testCreateUniqueCategory() {
-        String uniqueCategoryName = "Appliances-" + System.currentTimeMillis();
-        String categoryImage = "www.google.com";
+         uniqueCategoryName = "Appliances-" + System.currentTimeMillis();
+         categoryImage = "www.google.com";
 
         Response response = RestAssured
                 .given()
@@ -47,7 +50,8 @@ public class GetCategoriesTest {
                 .body("name", equalTo(uniqueCategoryName))
                 .body("image", equalTo(categoryImage))
                 .extract().response();
-
+        categorySlug = response.path("slug");
+        categoryImage = response.path("image");
         categoryId = response.path("id"); // ✅ Extract ID
         System.out.println("Created Unique Category ID: " + categoryId);
     }
@@ -63,8 +67,9 @@ public class GetCategoriesTest {
                 .then()
                 .statusCode(200)
                 .body("id", equalTo(categoryId))
-                .body("name", notNullValue())
-                .body("image", notNullValue())
+                .body("name", equalTo(uniqueCategoryName))
+                .body("image", equalTo(categoryImage))
+                .body("slug", equalTo(categorySlug))
                 .extract().response();
 
         System.out.println("Fetched Category by ID:\n" + response.asPrettyString());
